@@ -78,7 +78,7 @@ local rarityColors = {
 local function addItemLine(seedName, price, stock, imageId, rarity)
 	local itemFrame = Instance.new("Frame")
 	itemFrame.Size = UDim2.new(1, -10, 0, 40)
-	itemFrame.BackgroundTransparency = 1
+	itemFrame.BackgroundTransparency = 0.2
 	itemFrame.ZIndex = 10
 	itemFrame.Parent = mainFrame
 
