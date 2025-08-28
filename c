@@ -12,7 +12,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 500, 0, 450)
+mainFrame.Size = UDim2.new(0, 500, 0, 447)
 mainFrame.Position = UDim2.new(0, 20, 0, 130) -- 👈 dịch xuống
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.2
@@ -78,7 +78,7 @@ local rarityColors = {
 local function addItemLine(seedName, price, stock, imageId, rarity)
 	local itemFrame = Instance.new("Frame")
 	itemFrame.Size = UDim2.new(1, -10, 0, 40)
-	itemFrame.BackgroundTransparency = 0.2
+	itemFrame.BackgroundTransparency = 0.6
 	itemFrame.ZIndex = 10
 	itemFrame.Parent = mainFrame
 
