@@ -15,7 +15,7 @@ local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 500, 0, 450)
 mainFrame.Position = UDim2.new(0, 20, 0, 130) -- 👈 dịch xuống
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-mainFrame.BackgroundTransparency = 0.2
+mainFrame.BackgroundTransparency = 0.6
 mainFrame.BorderSizePixel = 0
 mainFrame.Visible = true
 mainFrame.ZIndex = 10
@@ -145,7 +145,7 @@ end
 task.spawn(function()
 	while true do
 		refreshStock()
-		task.wait(10)
+		task.wait(0.5)
 	end
 end)
 
