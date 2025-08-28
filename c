@@ -5,6 +5,10 @@ local listFrame = shopGui:FindFirstChildWhichIsA("ScrollingFrame", true)
 -- GUI riêng
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "StockViewer"
+screenGui.IgnoreGuiInset = true        -- đảm bảo không bị che bởi top bar
+screenGui.DisplayOrder = 9999          -- luôn nổi trên cùng
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+screenGui.ResetOnSpawn = false
 screenGui.Parent = player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
@@ -13,34 +17,9 @@ mainFrame.Position = UDim2.new(0, 20, 0, 90) -- 👈 dịch xuống
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.2
 mainFrame.BorderSizePixel = 0
+mainFrame.Visible = true
+mainFrame.ZIndex = 10
 mainFrame.Parent = screenGui
-
--- ✅ Thêm UIScale để responsive theo kích thước màn hình
-local uiScale = Instance.new("UIScale")
-uiScale.Parent = mainFrame
-
-local function applyScale()
-    local cam = workspace.CurrentCamera
-    if not cam then return end
-    local vp = cam.ViewportSize
-    -- Lấy hệ số scale dựa trên cả chiều rộng & cao (chuẩn 1280x720)
-    local sW = vp.X / 1280
-    local sH = vp.Y / 720
-    local s = math.clamp(math.min(sW, sH), 0.9, 1.8) -- giới hạn để không quá to/nhỏ
-    uiScale.Scale = s
-end
-
-if workspace.CurrentCamera then
-    applyScale()
-    workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(applyScale)
-else
-    workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-        if workspace.CurrentCamera then
-            applyScale()
-            workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(applyScale)
-        end
-    end)
-end
 
 local uiList = Instance.new("UIListLayout")
 uiList.Parent = mainFrame
@@ -54,10 +33,11 @@ countdownLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 countdownLabel.Font = Enum.Font.SourceSansBold
 countdownLabel.TextSize = 18
 countdownLabel.TextXAlignment = Enum.TextXAlignment.Left
--- ✅ Chữ tự co theo ô + ràng buộc min/max
+countdownLabel.ZIndex = 11
+-- 👉 chữ tự co, vẫn giữ min/max để không quá to/nhỏ
 countdownLabel.TextScaled = true
 local cdSize = Instance.new("UITextSizeConstraint")
-cdSize.MinTextSize = 18
+cdSize.MinTextSize = 20
 cdSize.MaxTextSize = 40
 cdSize.Parent = countdownLabel
 countdownLabel.Parent = mainFrame
@@ -99,6 +79,7 @@ local function addItemLine(seedName, price, stock, imageId, rarity)
 	local itemFrame = Instance.new("Frame")
 	itemFrame.Size = UDim2.new(1, -10, 0, 40)
 	itemFrame.BackgroundTransparency = 1
+	itemFrame.ZIndex = 10
 	itemFrame.Parent = mainFrame
 
 	local icon = Instance.new("ImageLabel")
@@ -106,6 +87,7 @@ local function addItemLine(seedName, price, stock, imageId, rarity)
 	icon.Position = UDim2.new(0, 0, 0, 4)
 	icon.BackgroundTransparency = 1
 	icon.Image = imageId or "rbxassetid://0" -- fallback
+	icon.ZIndex = 11
 	icon.Parent = itemFrame
 
 	local txt = Instance.new("TextLabel")
@@ -117,10 +99,11 @@ local function addItemLine(seedName, price, stock, imageId, rarity)
 	txt.TextSize = 16
 	txt.TextXAlignment = Enum.TextXAlignment.Left
 	txt.Text = seedName .. " | Giá: " .. price .. " | Stock: " .. stock
-	-- ✅ Chữ tự co + ràng buộc
+	txt.ZIndex = 11
+	-- 👉 chữ to hơn, tự co theo DPI
 	txt.TextScaled = true
 	local lineSize = Instance.new("UITextSizeConstraint")
-	lineSize.MinTextSize = 16
+	lineSize.MinTextSize = 18
 	lineSize.MaxTextSize = 36
 	lineSize.Parent = txt
 	txt.Parent = itemFrame
@@ -130,6 +113,7 @@ end
 local function refreshStock()
 	if not listFrame then
 		warn("Không tìm thấy ScrollingFrame trong Seed_Shop")
+		countdownLabel.Text = getCountdownText()
 		return
 	end
 
