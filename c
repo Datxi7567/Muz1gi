@@ -8,8 +8,8 @@ screenGui.Name = "StockViewer"
 screenGui.Parent = player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0.35, 0, 0.45, 0) -- chiếm 35% ngang, 45% cao
-mainFrame.Position = UDim2.new(0.02, 0, 0.15, 0) -- cách trái 2%, cách trên 15%
+mainFrame.Size = UDim2.new(0.35, 0, 0.5, 0) -- co giãn theo % màn hình
+mainFrame.Position = UDim2.new(0.02, 0, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.2
 mainFrame.BorderSizePixel = 0
@@ -21,7 +21,7 @@ uiList.Padding = UDim.new(0, 6)
 
 -- Countdown label
 local countdownLabel = Instance.new("TextLabel")
-countdownLabel.Size = UDim2.new(1, -10, 0, 0.08) -- cao 8% frame
+countdownLabel.Size = UDim2.new(1, -10, 0, 0.12) -- cao hơn
 countdownLabel.BackgroundTransparency = 1
 countdownLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 countdownLabel.Font = Enum.Font.SourceSansBold
@@ -29,6 +29,7 @@ countdownLabel.TextScaled = true
 countdownLabel.TextXAlignment = Enum.TextXAlignment.Left
 countdownLabel.Parent = mainFrame
 
+-- Clear nội dung cũ
 local function clearFrame()
 	for _, obj in ipairs(mainFrame:GetChildren()) do
 		if (obj:IsA("TextLabel") or obj:IsA("Frame")) and obj ~= countdownLabel then
@@ -37,7 +38,7 @@ local function clearFrame()
 	end
 end
 
--- Lấy countdown từ GUI shop
+-- Lấy countdown từ GUI shop hoặc SeedShopData
 local function getCountdownText()
 	local countdownLabelShop = shopGui:FindFirstChildWhichIsA("TextLabel", true)
 	if countdownLabelShop and string.find(countdownLabelShop.Text, "New seeds") then
@@ -52,31 +53,32 @@ local function getCountdownText()
 	return "Countdown: N/A"
 end
 
--- Map màu sắc theo rarity
+-- Map màu sắc rarity
 local rarityColors = {
 	["Common"] = Color3.fromRGB(200, 200, 200),
 	["Uncommon"] = Color3.fromRGB(0, 255, 0),
 	["Rare"] = Color3.fromRGB(0, 170, 255),
 	["Epic"] = Color3.fromRGB(170, 0, 255),
 	["Legendary"] = Color3.fromRGB(255, 215, 0),
+	["Mythical"] = Color3.fromRGB(255, 100, 100),
 }
 
--- Hàm thêm dòng có ảnh
+-- Thêm dòng có ảnh + text
 local function addItemLine(seedName, price, stock, imageId, rarity)
 	local itemFrame = Instance.new("Frame")
-	itemFrame.Size = UDim2.new(1, -10, 0, 0.1 * mainFrame.AbsoluteSize.Y) -- 10% chiều cao frame
+	itemFrame.Size = UDim2.new(1, -10, 0, 0.12) -- mỗi dòng chiếm 12% frame
 	itemFrame.BackgroundTransparency = 1
 	itemFrame.Parent = mainFrame
 
 	local icon = Instance.new("ImageLabel")
-	icon.Size = UDim2.new(0.1, 0, 1, 0) -- icon chiếm 10% chiều ngang
+	icon.Size = UDim2.new(0.12, 0, 0.9, 0)
 	icon.BackgroundTransparency = 1
 	icon.Image = imageId or "rbxassetid://0"
 	icon.Parent = itemFrame
 
 	local txt = Instance.new("TextLabel")
-	txt.Size = UDim2.new(0.9, -5, 1, 0)
-	txt.Position = UDim2.new(0.1, 5, 0, 0)
+	txt.Size = UDim2.new(0.85, 0, 1, 0)
+	txt.Position = UDim2.new(0.13, 0, 0, 0)
 	txt.BackgroundTransparency = 1
 	txt.TextColor3 = rarityColors[rarity] or Color3.fromRGB(255,255,255)
 	txt.Font = Enum.Font.SourceSans
@@ -117,11 +119,11 @@ local function refreshStock()
 	end
 end
 
--- Loop mỗi 1s
+-- Cập nhật mỗi 10s
 task.spawn(function()
 	while true do
 		refreshStock()
-		task.wait(1)
+		task.wait(10)
 	end
 end)
 
