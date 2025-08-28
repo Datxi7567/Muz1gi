@@ -1,0 +1,80 @@
+local player = game.Players.LocalPlayer
+local shopGui = player:WaitForChild("PlayerGui"):WaitForChild("Seed_Shop")
+local listFrame = shopGui:FindFirstChildWhichIsA("ScrollingFrame", true)
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "StockViewer"
+screenGui.Parent = player.PlayerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 400)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BackgroundTransparency = 0.2
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local uiList = Instance.new("UIListLayout")
+uiList.Parent = mainFrame
+uiList.Padding = UDim.new(0, 4)
+
+local function clearFrame()
+	for _, obj in ipairs(mainFrame:GetChildren()) do
+		if obj:IsA("TextLabel") then
+			obj:Destroy()
+		end
+	end
+end
+
+local function addLine(text, color)
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(1, -10, 0, 20)
+	lbl.BackgroundTransparency = 1
+	lbl.TextColor3 = color or Color3.fromRGB(200, 200, 200)
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Font = Enum.Font.SourceSansBold
+	lbl.TextSize = 16
+	lbl.Text = text
+	lbl.Parent = mainFrame
+end
+
+local function refreshStock()
+	if not listFrame then return end
+	clearFrame()
+	addLine("== STOCK HIỆN CÓ ==", Color3.fromRGB(0,255,0))
+	for _, frame in ipairs(listFrame:GetChildren()) do
+		if frame:IsA("Frame") or frame:IsA("TextButton") then
+			local seedName, price, stock
+			for _, obj in ipairs(frame:GetDescendants()) do
+				if obj:IsA("TextLabel") then
+					if obj.Name == "Seed_Text" or obj.Name == "Seed_Text_Shadow" then
+						seedName = obj
+					elseif obj.Name == "Cost_Text" then
+						price = obj
+					elseif obj.Name == "Stock_Text" then
+						stock = obj
+					end
+				end
+			end
+			if seedName and price and stock then
+				if not stock.Text:find("X0") and not price.Text:find("NO STOCK") then
+					addLine(seedName.Text .. " | " .. price.Text .. " | " .. stock.Text, Color3.fromRGB(255,255,0))
+				end
+			end
+		end
+	end
+end
+
+shopGui:GetPropertyChangedSignal("Enabled"):Connect(function()
+	if shopGui.Enabled then
+		refreshStock()
+	end
+end)
+
+if listFrame then
+	listFrame.ChildAdded:Connect(function()
+		refreshStock()
+	end)
+end
+
+refreshStock()
