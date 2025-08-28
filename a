@@ -1,7 +1,12 @@
 local player = game.Players.LocalPlayer
+local rs = game:GetService("ReplicatedStorage")
 local shopGui = player:WaitForChild("PlayerGui"):WaitForChild("Seed_Shop")
 local listFrame = shopGui:FindFirstChildWhichIsA("ScrollingFrame", true)
 
+-- require SeedShopData để lấy refreshTime
+local seedShopData = require(rs.Data.SeedShopData)
+
+-- GUI custom
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "StockViewer"
 screenGui.Parent = player.PlayerGui
@@ -20,9 +25,7 @@ uiList.Padding = UDim.new(0, 4)
 
 local function clearFrame()
 	for _, obj in ipairs(mainFrame:GetChildren()) do
-		if obj:IsA("TextLabel") then
-			obj:Destroy()
-		end
+		if obj:IsA("TextLabel") then obj:Destroy() end
 	end
 end
 
@@ -65,16 +68,24 @@ local function refreshStock()
 	end
 end
 
+-- khi mở shop
 shopGui:GetPropertyChangedSignal("Enabled"):Connect(function()
-	if shopGui.Enabled then
-		refreshStock()
+	if shopGui.Enabled then refreshStock() end
+end)
+
+-- khi shop reset (dựa vào SeedShopData.RefreshTime)
+task.spawn(function()
+	while task.wait(1) do
+		if seedShopData and seedShopData.RefreshTime then
+			seedShopData.RefreshTime = seedShopData.RefreshTime - 1
+			if seedShopData.RefreshTime <= 0 then
+				refreshStock()
+				-- reset lại timer (shop thường tự gán lại, đây chỉ phòng hờ)
+				seedShopData.RefreshTime = 180
+			end
+		end
 	end
 end)
 
-if listFrame then
-	listFrame.ChildAdded:Connect(function()
-		refreshStock()
-	end)
-end
-
+-- chạy lần đầu
 refreshStock()
