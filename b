@@ -40,7 +40,7 @@ end
 -- Lấy countdown từ GUI shop
 local function getCountdownText()
 	local countdownLabelShop = shopGui:FindFirstChildWhichIsA("TextLabel", true)
-	if countdownLabelShop and string.find(countdownLabelShop.Text, "New seeds") then
+	if countdownLabelShop and string.find(countdownLabelShop.Text, "Reset Shop trong ") then
 		return countdownLabelShop.Text
 	end
 	local ok, seedData = pcall(function()
