@@ -8,8 +8,8 @@ screenGui.Name = "StockViewer"
 screenGui.Parent = player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 360, 0, 270)
-mainFrame.Position = UDim2.new(0, 20, 10, -200)
+mainFrame.Size = UDim2.new(0, 360, 0, 320)
+mainFrame.Position = UDim2.new(0, 20, 0, 300) -- 👈 dịch xuống
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.2
 mainFrame.BorderSizePixel = 0
@@ -52,8 +52,17 @@ local function getCountdownText()
 	return "Countdown: N/A"
 end
 
+-- Map màu sắc theo rarity
+local rarityColors = {
+	["Common"] = Color3.fromRGB(200, 200, 200),
+	["Uncommon"] = Color3.fromRGB(0, 255, 0),
+	["Rare"] = Color3.fromRGB(0, 170, 255),
+	["Epic"] = Color3.fromRGB(170, 0, 255),
+	["Legendary"] = Color3.fromRGB(255, 215, 0),
+}
+
 -- Hàm thêm dòng có ảnh
-local function addItemLine(seedName, price, stock, imageId)
+local function addItemLine(seedName, price, stock, imageId, rarity)
 	local itemFrame = Instance.new("Frame")
 	itemFrame.Size = UDim2.new(1, -10, 0, 40)
 	itemFrame.BackgroundTransparency = 1
@@ -70,7 +79,7 @@ local function addItemLine(seedName, price, stock, imageId)
 	txt.Size = UDim2.new(1, -40, 1, 0)
 	txt.Position = UDim2.new(0, 40, 0, 0)
 	txt.BackgroundTransparency = 1
-	txt.TextColor3 = Color3.fromRGB(255,255,0)
+	txt.TextColor3 = rarityColors[rarity] or Color3.fromRGB(255,255,255)
 	txt.Font = Enum.Font.SourceSans
 	txt.TextSize = 16
 	txt.TextXAlignment = Enum.TextXAlignment.Left
@@ -90,18 +99,19 @@ local function refreshStock()
 
 	for _, frame in ipairs(listFrame:GetChildren()) do
 		if frame:IsA("Frame") or frame:IsA("TextButton") then
-			local seedName, price, stock, shopIcon
+			local seedName, price, stock, shopIcon, rarityLabel
 
-			-- lấy chính xác các label + icon
 			seedName = frame:FindFirstChild("Seed_Text", true)
 			price = frame:FindFirstChild("Cost_Text", true)
 			stock = frame:FindFirstChild("Stock_Text", true)
 			shopIcon = frame:FindFirstChild("ShopItem_Image", true)
+			rarityLabel = frame:FindFirstChild("Rarity_Text", true)
 
 			if seedName and price and stock then
 				if not stock.Text:find("X0") and not price.Text:find("NO STOCK") then
 					local imgId = shopIcon and shopIcon.Image or nil
-					addItemLine(seedName.Text, price.Text, stock.Text, imgId)
+					local rarity = rarityLabel and rarityLabel.Text or "Common"
+					addItemLine(seedName.Text, price.Text, stock.Text, imgId, rarity)
 				end
 			end
 		end
@@ -112,7 +122,7 @@ end
 task.spawn(function()
 	while true do
 		refreshStock()
-		task.wait(0.1)
+		task.wait(10)
 	end
 end)
 
