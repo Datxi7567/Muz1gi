@@ -19,7 +19,6 @@ local uiList = Instance.new("UIListLayout")
 uiList.Parent = mainFrame
 uiList.Padding = UDim.new(0, 6)
 
--- Countdown label
 local countdownLabel = Instance.new("TextLabel")
 countdownLabel.Size = UDim2.new(1, -10, 0, 25)
 countdownLabel.BackgroundTransparency = 1
@@ -28,6 +27,12 @@ countdownLabel.Font = Enum.Font.SourceSansBold
 countdownLabel.TextSize = 18
 countdownLabel.TextXAlignment = Enum.TextXAlignment.Left
 countdownLabel.Parent = mainFrame
+
+-- Thử require module dữ liệu seeds
+local SeedsData
+pcall(function()
+	SeedsData = require(game.ReplicatedStorage.Data.SeedsData)
+end)
 
 local function clearFrame()
 	for _, obj in ipairs(mainFrame:GetChildren()) do
@@ -39,22 +44,6 @@ local function clearFrame()
 	end
 end
 
--- Lấy countdown từ GUI shop
-local function getCountdownText()
-	local countdownLabelShop = shopGui:FindFirstChildWhichIsA("TextLabel", true)
-	if countdownLabelShop and string.find(countdownLabelShop.Text, "New seeds") then
-		return countdownLabelShop.Text
-	end
-	local ok, seedData = pcall(function()
-		return require(game.ReplicatedStorage.Data.SeedShopData)
-	end)
-	if ok and type(seedData) == "table" and seedData.RefreshTime then
-		return "Refresh in " .. tostring(seedData.RefreshTime) .. "s"
-	end
-	return "Countdown: N/A"
-end
-
--- Hàm thêm dòng có ảnh
 local function addItemLine(seedName, price, stock, imageId)
 	local itemFrame = Instance.new("Frame")
 	itemFrame.Size = UDim2.new(1, -10, 0, 40)
@@ -65,7 +54,7 @@ local function addItemLine(seedName, price, stock, imageId)
 	icon.Size = UDim2.new(0, 32, 0, 32)
 	icon.Position = UDim2.new(0, 0, 0, 4)
 	icon.BackgroundTransparency = 1
-	icon.Image = imageId or "rbxassetid://0" -- fallback
+	icon.Image = imageId or "rbxassetid://0"
 	icon.Parent = itemFrame
 
 	local txt = Instance.new("TextLabel")
@@ -80,45 +69,45 @@ local function addItemLine(seedName, price, stock, imageId)
 	txt.Parent = itemFrame
 end
 
--- Refresh stock
 local function refreshStock()
-	if not listFrame then
-		warn("Không tìm thấy ScrollingFrame trong Seed_Shop")
-		return
-	end
-
 	clearFrame()
-	countdownLabel.Text = getCountdownText()
+	countdownLabel.Text = "Đang cập nhật..."
 
 	for _, frame in ipairs(listFrame:GetChildren()) do
 		if frame:IsA("Frame") or frame:IsA("TextButton") then
-			local seedName, price, stock, iconObj
+			local seedName, price, stock
 
 			for _, obj in ipairs(frame:GetDescendants()) do
 				if obj:IsA("TextLabel") then
-					if obj.Name == "Seed_Text" or obj.Name == "Seed_Text_Shadow" then
-						seedName = obj
+					if obj.Name == "Seed_Text" then
+						seedName = obj.Text
 					elseif obj.Name == "Cost_Text" then
-						price = obj
+						price = obj.Text
 					elseif obj.Name == "Stock_Text" then
-						stock = obj
+						stock = obj.Text
 					end
-				elseif obj:IsA("ImageLabel") then
-					iconObj = obj
 				end
 			end
 
 			if seedName and price and stock then
-				if not stock.Text:find("X0") and not price.Text:find("NO STOCK") then
-					local imgId = iconObj and iconObj.Image or nil
-					addItemLine(seedName.Text, price.Text, stock.Text, imgId)
+				if not stock:find("X0") and not price:find("NO STOCK") then
+					local imageId
+
+					-- Nếu có module SeedsData thì thử tra icon
+					if SeedsData and SeedsData[seedName] and SeedsData[seedName].IconId then
+						imageId = "rbxassetid://".. tostring(SeedsData[seedName].IconId)
+					end
+
+					addItemLine(seedName, price, stock, imageId)
 				end
 			end
 		end
 	end
+
+	countdownLabel.Text = "Danh sách hạt giống (cập nhật 10s)"
 end
 
--- Loop mỗi 10s
+-- Loop update
 task.spawn(function()
 	while true do
 		refreshStock()
