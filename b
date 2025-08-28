@@ -8,7 +8,7 @@ screenGui.Name = "StockViewer"
 screenGui.Parent = player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 360, 0, 420)
+mainFrame.Size = UDim2.new(0, 360, 0, 220)
 mainFrame.Position = UDim2.new(0, 20, 0.5, -200)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.2
@@ -40,7 +40,7 @@ end
 -- Lấy countdown từ GUI shop
 local function getCountdownText()
 	local countdownLabelShop = shopGui:FindFirstChildWhichIsA("TextLabel", true)
-	if countdownLabelShop and string.find(countdownLabelShop.Text, "Reset Shop trong ") then
+	if countdownLabelShop and string.find(countdownLabelShop.Text, "New seeds") then
 		return countdownLabelShop.Text
 	end
 	local ok, seedData = pcall(function()
@@ -112,7 +112,7 @@ end
 task.spawn(function()
 	while true do
 		refreshStock()
-		task.wait(10)
+		task.wait(0.1)
 	end
 end)
 
