@@ -12,7 +12,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 360, 0, 320)
+mainFrame.Size = UDim2.new(0, 500, 0, 400)
 mainFrame.Position = UDim2.new(0, 20, 0, 90) -- 👈 dịch xuống
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BackgroundTransparency = 0.2
