@@ -31,10 +31,8 @@ countdownLabel.Parent = mainFrame
 
 local function clearFrame()
 	for _, obj in ipairs(mainFrame:GetChildren()) do
-		if obj:IsA("TextLabel") or obj:IsA("Frame") then
-			if obj ~= countdownLabel then
-				obj:Destroy()
-			end
+		if (obj:IsA("TextLabel") or obj:IsA("Frame")) and obj ~= countdownLabel then
+			obj:Destroy()
 		end
 	end
 end
@@ -92,25 +90,17 @@ local function refreshStock()
 
 	for _, frame in ipairs(listFrame:GetChildren()) do
 		if frame:IsA("Frame") or frame:IsA("TextButton") then
-			local seedName, price, stock, iconObj
+			local seedName, price, stock, shopIcon
 
-			for _, obj in ipairs(frame:GetDescendants()) do
-				if obj:IsA("TextLabel") then
-					if obj.Name == "Seed_Text" or obj.Name == "Seed_Text_Shadow" then
-						seedName = obj
-					elseif obj.Name == "Cost_Text" then
-						price = obj
-					elseif obj.Name == "Stock_Text" then
-						stock = obj
-					end
-				elseif obj:IsA("ImageLabel") then
-					iconObj = obj
-				end
-			end
+			-- lấy chính xác các label + icon
+			seedName = frame:FindFirstChild("Seed_Text", true)
+			price = frame:FindFirstChild("Cost_Text", true)
+			stock = frame:FindFirstChild("Stock_Text", true)
+			shopIcon = frame:FindFirstChild("ShopItem_Image", true)
 
 			if seedName and price and stock then
 				if not stock.Text:find("X0") and not price.Text:find("NO STOCK") then
-					local imgId = iconObj and iconObj.Image or nil
+					local imgId = shopIcon and shopIcon.Image or nil
 					addItemLine(seedName.Text, price.Text, stock.Text, imgId)
 				end
 			end
