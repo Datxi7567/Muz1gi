@@ -1,60 +1,127 @@
--- ⚡ Blox Fruits FPS Boost - Siêu tối giản
+-- ⚡ Blox Fruits Ultra LowSpec (Client-side / Executor)
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
--- 1. Giảm đồ họa xuống thấp nhất
-settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-settings().Rendering.WaterQuality = 0
+-- Thời gian bám (giây) để chặn effect mới; đặt 0 nếu chỉ chạy 1 lần
+local ENFORCE_FOR = 30
+local PASS_INTERVAL = 3
 
--- 2. Tắt ánh sáng, bóng, hiệu ứng môi trường
+-- 1) Ép chất lượng thấp nhất
+pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
+pcall(function() settings().Rendering.WaterQuality = 0 end)
+pcall(function() Lighting.Technology = Enum.Technology.Compatibility end)
+
 Lighting.GlobalShadows = false
-Lighting.FogEnd = 9e9
 Lighting.Brightness = 1
 Lighting.EnvironmentDiffuseScale = 0
 Lighting.EnvironmentSpecularScale = 0
-Lighting.ClockTime = 14 -- luôn sáng ban ngày
+Lighting.FogEnd = 9e9
+Lighting.ClockTime = 14 -- sáng ban ngày
 
--- 3. Hàm xóa effect, texture, mesh
-local function simplify(obj)
-    for _, v in pairs(obj:GetDescendants()) do
-        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") 
-        or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Beam") then
-            v.Enabled = false
-        elseif v:IsA("Decal") or v:IsA("Texture") then
-            v.Transparency = 1
-        elseif v:IsA("MeshPart") or v:IsA("Part") then
-            v.Material = Enum.Material.SmoothPlastic
-            if v:IsA("MeshPart") then
-                v.TextureID = ""
-            end
-        elseif v:IsA("SpecialMesh") or v:IsA("Mesh") then
-            v:Destroy()
+if Terrain then
+    pcall(function() Terrain.Decoration = false end) -- tắt cỏ
+    pcall(function() Terrain.WaterReflectance = 0 end)
+    pcall(function() Terrain.WaterTransparency = 1 end)
+    pcall(function() Terrain.WaterWaveSize = 0 end)
+    pcall(function() Terrain.WaterWaveSpeed = 0 end)
+end
+
+local stats = {
+    particles = 0, decals = 0, meshes = 0, surfaces = 0,
+    lights = 0, posteffects = 0, materials = 0, highlights = 0, surfaceGUIs = 0
+}
+
+local function strip(inst)
+    -- Hiệu ứng hạt
+    if inst:IsA("ParticleEmitter") or inst:IsA("Trail") or inst:IsA("Beam")
+    or inst:IsA("Smoke") or inst:IsA("Fire") or inst:IsA("Sparkles") then
+        inst.Enabled = false
+        stats.particles += 1
+    -- Đèn
+    elseif inst:IsA("PointLight") or inst:IsA("SpotLight") or inst:IsA("SurfaceLight") then
+        inst.Enabled = false
+        stats.lights += 1
+    -- Texture/Decal
+    elseif inst:IsA("Decal") or inst:IsA("Texture") then
+        inst.Transparency = 1
+        stats.decals += 1
+    -- PBR / SurfaceAppearance
+    elseif inst:IsA("SurfaceAppearance") then
+        inst:Destroy()
+        stats.surfaces += 1
+    -- Highlight (viền phát sáng)
+    elseif inst:IsA("Highlight") then
+        inst.Enabled = false
+        stats.highlights += 1
+    -- UI dán lên bề mặt (nặng)
+    elseif inst:IsA("SurfaceGui") then
+        inst.Enabled = false
+        stats.surfaceGUIs += 1
+    -- Hậu kỳ/khí quyển
+    elseif inst:IsA("BloomEffect") or inst:IsA("ColorCorrectionEffect")
+        or inst:IsA("DepthOfFieldEffect") or inst:IsA("SunRaysEffect")
+        or inst:IsA("BlurEffect") then
+        inst.Enabled = false
+        stats.posteffects += 1
+    elseif inst:IsA("Atmosphere") then
+        inst:Destroy()
+        stats.posteffects += 1
+    -- Đơn giản hóa vật liệu
+    elseif inst:IsA("MeshPart") then
+        inst.Material = Enum.Material.SmoothPlastic
+        inst.Reflectance = 0
+        pcall(function() inst.TextureID = "" end)
+        stats.meshes += 1
+    elseif inst:IsA("SpecialMesh") or inst:IsA("Mesh") then
+        inst:Destroy()
+        stats.meshes += 1
+    elseif inst:IsA("Part") then
+        inst.Material = Enum.Material.SmoothPlastic
+        inst.Reflectance = 0
+        stats.materials += 1
+    end
+end
+
+local function sweep(container)
+    for _, v in ipairs(container:GetDescendants()) do
+        strip(v)
+    end
+end
+
+-- 2) Quét hiện tại
+sweep(Workspace)
+sweep(Lighting)
+for _, plr in ipairs(Players:GetPlayers()) do
+    if plr.Character then sweep(plr.Character) end
+end
+
+-- 3) Bám trong ENFORCE_FOR giây để chặn effect mới
+if ENFORCE_FOR > 0 then
+    local connections = {}
+    table.insert(connections, Workspace.DescendantAdded:Connect(strip))
+    table.insert(connections, Lighting.ChildAdded:Connect(strip))
+    table.insert(connections, Players.PlayerAdded:Connect(function(p)
+        p.CharacterAdded:Connect(function(char)
+            sweep(char)
+            char.DescendantAdded:Connect(strip)
+        end)
+    end))
+
+    -- Thêm vài pass quét lại theo khoảng PASS_INTERVAL
+    local t0 = os.clock()
+    while os.clock() - t0 < ENFORCE_FOR do
+        task.wait(PASS_INTERVAL)
+        sweep(Workspace)
+        sweep(Lighting)
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr.Character then sweep(plr.Character) end
         end
     end
+    for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
 end
 
--- 4. Dọn sạch toàn bộ hiện tại
-simplify(Workspace)
-for _, p in pairs(Players:GetPlayers()) do
-    if p.Character then
-        simplify(p.Character)
-    end
-end
-
--- 5. Chặn luôn effect mới sinh ra
-Workspace.DescendantAdded:Connect(function(obj)
-    if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") 
-    or obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Beam") then
-        obj.Enabled = false
-    elseif obj:IsA("Decal") or obj:IsA("Texture") then
-        obj.Transparency = 1
-    elseif obj:IsA("MeshPart") then
-        obj.TextureID = ""
-        obj.Material = Enum.Material.SmoothPlastic
-    elseif obj:IsA("SpecialMesh") or obj:IsA("Mesh") then
-        obj:Destroy()
-    end
-end)
-
-print("✅ FPS Boost siêu tối giản cho Blox Fruits đã bật")
+print(("[UltraLowSpec] Done | particles:%d decals:%d meshes:%d surfaces:%d lights:%d postfx:%d mats:%d highlights:%d surfaceGUIs:%d")
+    :format(stats.particles, stats.decals, stats.meshes, stats.surfaces, stats.lights, stats.posteffects, stats.materials, stats.highlights, stats.surfaceGUIs))
