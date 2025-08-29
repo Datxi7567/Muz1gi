@@ -1,87 +1,97 @@
--- ⚡ Blox Fruits Ultra LowSpec (Client-side / Executor)
-local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Terrain = Workspace:FindFirstChildOfClass("Terrain")
+-- ⚡ Blox Fruits Ultra LowSpec (Client-side / Executor) - FIX WaterQuality
+local Lighting   = game:GetService("Lighting")
+local Workspace  = game:GetService("Workspace")
+local Players    = game:GetService("Players")
+local Terrain    = Workspace:FindFirstChildOfClass("Terrain")
 
--- Thời gian bám (giây) để chặn effect mới; đặt 0 nếu chỉ chạy 1 lần
+-- Thời gian bám để chặn effect mới (giây). Đặt 0 nếu chỉ muốn chạy 1 lần.
 local ENFORCE_FOR = 30
 local PASS_INTERVAL = 3
 
--- 1) Ép chất lượng thấp nhất
+-- 1) Ép chất lượng thấp nhất (chỉ QualityLevel hợp lệ)
 pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
-pcall(function() settings().Rendering.WaterQuality = 0 end)
-pcall(function() Lighting.Technology = Enum.Technology.Compatibility end)
+-- (ĐÃ BỎ WaterQuality vì không còn trong RenderSettings)
 
+-- Lighting giản lược (Technology có thể không đổi được ở live game → pcall)
+pcall(function() Lighting.Technology = Enum.Technology.Compatibility end)
 Lighting.GlobalShadows = false
 Lighting.Brightness = 1
 Lighting.EnvironmentDiffuseScale = 0
 Lighting.EnvironmentSpecularScale = 0
 Lighting.FogEnd = 9e9
-Lighting.ClockTime = 14 -- sáng ban ngày
+Lighting.ClockTime = 14 -- ban ngày, sáng rõ
 
+-- Nước/cỏ Terrain: giảm tối đa
 if Terrain then
-    pcall(function() Terrain.Decoration = false end) -- tắt cỏ
-    pcall(function() Terrain.WaterReflectance = 0 end)
+    pcall(function() Terrain.Decoration = false end)      -- tắt cỏ
     pcall(function() Terrain.WaterTransparency = 1 end)
-    pcall(function() Terrain.WaterWaveSize = 0 end)
-    pcall(function() Terrain.WaterWaveSpeed = 0 end)
+    pcall(function() Terrain.WaterReflectance  = 0 end)
+    pcall(function() Terrain.WaterWaveSize     = 0 end)
+    pcall(function() Terrain.WaterWaveSpeed    = 0 end)
 end
 
+-- Thống kê
 local stats = {
-    particles = 0, decals = 0, meshes = 0, surfaces = 0,
-    lights = 0, posteffects = 0, materials = 0, highlights = 0, surfaceGUIs = 0
+    particles=0, decals=0, meshes=0, surfaces=0,
+    lights=0, posteffects=0, materials=0, highlights=0, surfaceGUIs=0
 }
 
+-- Hàm giản lược/loại bỏ
 local function strip(inst)
-    -- Hiệu ứng hạt
+    -- Hạt/hiệu ứng
     if inst:IsA("ParticleEmitter") or inst:IsA("Trail") or inst:IsA("Beam")
     or inst:IsA("Smoke") or inst:IsA("Fire") or inst:IsA("Sparkles") then
         inst.Enabled = false
-        stats.particles += 1
+        stats.particles = stats.particles + 1
+
     -- Đèn
     elseif inst:IsA("PointLight") or inst:IsA("SpotLight") or inst:IsA("SurfaceLight") then
         inst.Enabled = false
-        stats.lights += 1
+        stats.lights = stats.lights + 1
+
     -- Texture/Decal
     elseif inst:IsA("Decal") or inst:IsA("Texture") then
         inst.Transparency = 1
-        stats.decals += 1
+        stats.decals = stats.decals + 1
+
     -- PBR / SurfaceAppearance
     elseif inst:IsA("SurfaceAppearance") then
         inst:Destroy()
-        stats.surfaces += 1
-    -- Highlight (viền phát sáng)
+        stats.surfaces = stats.surfaces + 1
+
+    -- Highlight (viền glow)
     elseif inst:IsA("Highlight") then
         inst.Enabled = false
-        stats.highlights += 1
+        stats.highlights = stats.highlights + 1
+
     -- UI dán lên bề mặt (nặng)
     elseif inst:IsA("SurfaceGui") then
         inst.Enabled = false
-        stats.surfaceGUIs += 1
+        stats.surfaceGUIs = stats.surfaceGUIs + 1
+
     -- Hậu kỳ/khí quyển
     elseif inst:IsA("BloomEffect") or inst:IsA("ColorCorrectionEffect")
         or inst:IsA("DepthOfFieldEffect") or inst:IsA("SunRaysEffect")
         or inst:IsA("BlurEffect") then
         inst.Enabled = false
-        stats.posteffects += 1
+        stats.posteffects = stats.posteffects + 1
     elseif inst:IsA("Atmosphere") then
         inst:Destroy()
-        stats.posteffects += 1
-    -- Đơn giản hóa vật liệu
+        stats.posteffects = stats.posteffects + 1
+
+    -- Đơn giản hóa vật liệu/mesh
     elseif inst:IsA("MeshPart") then
         inst.Material = Enum.Material.SmoothPlastic
         inst.Reflectance = 0
         pcall(function() inst.TextureID = "" end)
-        stats.meshes += 1
+        stats.meshes = stats.meshes + 1
     elseif inst:IsA("SpecialMesh") or inst:IsA("Mesh") then
         inst:Destroy()
-        stats.meshes += 1
+        stats.meshes = stats.meshes + 1
     elseif inst:IsA("Part") then
         inst.Material = Enum.Material.SmoothPlastic
         inst.Reflectance = 0
-        stats.materials += 1
+        stats.materials = stats.materials + 1
     end
 end
 
@@ -98,11 +108,11 @@ for _, plr in ipairs(Players:GetPlayers()) do
     if plr.Character then sweep(plr.Character) end
 end
 
--- 3) Bám trong ENFORCE_FOR giây để chặn effect mới
+-- 3) Bám trong ENFORCE_FOR giây để chặn thứ mới sinh
 if ENFORCE_FOR > 0 then
     local connections = {}
     table.insert(connections, Workspace.DescendantAdded:Connect(strip))
-    table.insert(connections, Lighting.ChildAdded:Connect(strip))
+    table.insert(connections, Lighting.DescendantAdded:Connect(strip))
     table.insert(connections, Players.PlayerAdded:Connect(function(p)
         p.CharacterAdded:Connect(function(char)
             sweep(char)
@@ -110,7 +120,6 @@ if ENFORCE_FOR > 0 then
         end)
     end))
 
-    -- Thêm vài pass quét lại theo khoảng PASS_INTERVAL
     local t0 = os.clock()
     while os.clock() - t0 < ENFORCE_FOR do
         task.wait(PASS_INTERVAL)
@@ -123,5 +132,5 @@ if ENFORCE_FOR > 0 then
     for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
 end
 
-print(("[UltraLowSpec] Done | particles:%d decals:%d meshes:%d surfaces:%d lights:%d postfx:%d mats:%d highlights:%d surfaceGUIs:%d")
+print(("[UltraLowSpec: DONE] particles:%d decals:%d meshes:%d surfaces:%d lights:%d postfx:%d mats:%d highlights:%d surfaceGUIs:%d")
     :format(stats.particles, stats.decals, stats.meshes, stats.surfaces, stats.lights, stats.posteffects, stats.materials, stats.highlights, stats.surfaceGUIs))
