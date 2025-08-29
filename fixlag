@@ -1,0 +1,60 @@
+-- ⚡ Blox Fruits FPS Boost - Siêu tối giản
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+
+-- 1. Giảm đồ họa xuống thấp nhất
+settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+settings().Rendering.WaterQuality = 0
+
+-- 2. Tắt ánh sáng, bóng, hiệu ứng môi trường
+Lighting.GlobalShadows = false
+Lighting.FogEnd = 9e9
+Lighting.Brightness = 1
+Lighting.EnvironmentDiffuseScale = 0
+Lighting.EnvironmentSpecularScale = 0
+Lighting.ClockTime = 14 -- luôn sáng ban ngày
+
+-- 3. Hàm xóa effect, texture, mesh
+local function simplify(obj)
+    for _, v in pairs(obj:GetDescendants()) do
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") 
+        or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Beam") then
+            v.Enabled = false
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v.Transparency = 1
+        elseif v:IsA("MeshPart") or v:IsA("Part") then
+            v.Material = Enum.Material.SmoothPlastic
+            if v:IsA("MeshPart") then
+                v.TextureID = ""
+            end
+        elseif v:IsA("SpecialMesh") or v:IsA("Mesh") then
+            v:Destroy()
+        end
+    end
+end
+
+-- 4. Dọn sạch toàn bộ hiện tại
+simplify(Workspace)
+for _, p in pairs(Players:GetPlayers()) do
+    if p.Character then
+        simplify(p.Character)
+    end
+end
+
+-- 5. Chặn luôn effect mới sinh ra
+Workspace.DescendantAdded:Connect(function(obj)
+    if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") 
+    or obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Beam") then
+        obj.Enabled = false
+    elseif obj:IsA("Decal") or obj:IsA("Texture") then
+        obj.Transparency = 1
+    elseif obj:IsA("MeshPart") then
+        obj.TextureID = ""
+        obj.Material = Enum.Material.SmoothPlastic
+    elseif obj:IsA("SpecialMesh") or obj:IsA("Mesh") then
+        obj:Destroy()
+    end
+end)
+
+print("✅ FPS Boost siêu tối giản cho Blox Fruits đã bật")
